@@ -90,22 +90,25 @@ def cleanup(excluding):
             killproc(pid_file, HTTPD)
 
 if __name__ == "__main__":
+    # run the command first using the base httpd process
+    subprocess.call([HTTPD] + sys.argv[1:])
+
     # record a set of all the pid files we've created, so we know which ones *not* to
     # clean up later
     pid_files = set()
 
-    # loop through all the vhosts
+    # loop through all the vhosts. If the vhost has a line that matches
+    # <IfDefine {name}.{port_number}>
+    # we assume it is a vhost that we should spawn a new apache process for
+    # on that port. Run the httpd command for that vhost, with the port and a
+    # few other options set automatically
     for filename in os.listdir(VHOST_DIR):
         # ignore non-.conf files
         if not filename.endswith(".conf"):
             continue
 
         vhost_path = os.path.join(VHOST_DIR, filename)
-
         with open(vhost_path, "r") as vhost:
-            # if the vhost has a line that matches <IfDefine {name}.{port_number}>
-            # we assume it is a vhost that we should spawn a new apache process for
-            # on that port
             for line in vhost:
                 line = line.strip()
                 # did the line match?
