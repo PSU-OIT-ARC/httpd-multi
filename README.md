@@ -13,15 +13,15 @@ where {name} is a string in [A-Za-z0-9]+ and {port} is an integer number.
 
 If the file matches, httpd-multi will issue the httpd command with these options set on the command line:
 
-    -f /this/dir/base.conf # your base httpd configuration located in this directory
+    -f base.conf # your base httpd configuration located in /etc/httpd
     -Dhttpdmulti # defines a variable you can use in conf files if needed
     -D{name}.{port} # defines the variable in the <IfDefine>
     -c 'Include path/to/vhost.conf' # includes the vhost file itself
     -c 'Listen {port}' # tell httpd to listen on the right port specified by the <IfDefine> flag
-    -c 'PidFile run/{name}.{port}.pid' # specifies the PID file
+    -c 'PidFile /var/run/httpd/{name}.{port}.pid' # specifies the PID file
     -c 'ErrorLog logs/{port}_error_log' # specifies the location of the log file
 
-It passes any extra arguments along to httpd.
+It passes any extra arguments along to httpd, so the usage is the same as httpd.
 
 ## Usage
 
@@ -68,7 +68,3 @@ Same as httpd:
 
         </VirtualHost>
     </IfDefine>
-
-## Gotchas 
-
-If you remove a vhost file, 

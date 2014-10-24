@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import time
 import subprocess
 import re
@@ -8,14 +9,14 @@ import signal
 
 # path to the httpd executable
 HTTPD = "/usr/sbin/httpd"
-# path to the apache base configuration you want to use
-BASE_CONF = os.path.join(os.path.dirname(__file__), "base.conf")
+# path to the apache base configuration you want to use relative to serverroot
+BASE_CONF = "base.conf"
 # path to the vhost directory
 VHOST_DIR = "/etc/httpd/vhost.d"
 # a name to use for pid files so we know which ones belong to us
 IDENTIFIER = "httpdmulti"
 # where to store pid files
-PID_DIR = "/tmp"
+PID_DIR = "/var/run/httpd"
 
 
 def pidof(binary):
@@ -28,6 +29,15 @@ def try_remove(path):
     """Tries to remove the file at path"""
     try:
         os.remove(path)
+        return True
+    except OSError:
+        return False
+
+
+def try_kill(pid, sig):
+    """Sends the sig signal to the pid""" 
+    try:
+        os.kill(pid)
         return True
     except OSError:
         return False
@@ -46,7 +56,7 @@ def killproc(pid_file, binary, max_tries=10):
 
     # first send the SIGTERM signal
     if pid in pidof(binary):
-        os.kill(pid, signal.SIGTERM)
+        try_kill(pid, signal.SIGTERM)
         # give the process a little bit of time to clean up
         time.sleep(0.1)
     else:
@@ -64,9 +74,10 @@ def killproc(pid_file, binary, max_tries=10):
             return 0
 
     # as a last resort...
-    os.kill(pid, signal.SIGKILL)
+    try_kill(pid, signal.SIGKILL)
     try_remove(pid_file)
     return 0
+
 
 def cleanup(excluding):
     """
@@ -79,16 +90,18 @@ def cleanup(excluding):
             killproc(pid_file, HTTPD)
 
 if __name__ == "__main__":
-    # loop through all the vhosts
-
-    # a set of all the pid files we've created
+    # record a set of all the pid files we've created, so we know which ones *not* to
+    # clean up later
     pid_files = set()
+
+    # loop through all the vhosts
     for filename in os.listdir(VHOST_DIR):
         # ignore non-.conf files
         if not filename.endswith(".conf"):
             continue
 
         vhost_path = os.path.join(VHOST_DIR, filename)
+
         with open(vhost_path, "r") as vhost:
             # if the vhost has a line that matches <IfDefine {name}.{port_number}>
             # we assume it is a vhost that we should spawn a new apache process for
@@ -96,25 +109,27 @@ if __name__ == "__main__":
             for line in vhost:
                 line = line.strip()
                 # did the line match?
-                matches = re.search(r"^\s*<IfDefine (?P<name>[A-Za-z0-9]+.(?P<port>\d+))>", line)
+                matches = re.search(r"^\s*<IfDefine (?P<var>(?P<name>[A-Za-z0-9]+)\.(?P<port>\d+))>", line)
                 if not matches:
                     continue
 
                 name = matches.group("name")
                 port = int(matches.group("port"))
-                pid_file = os.path.join(PID_DIR, "%s-%s.pid" % (IDENTIFIER, name))
+                var = matches.group("var")
+                pid_file = os.path.join(PID_DIR, "%s-%s.pid" % (IDENTIFIER, var))
+                print("Executing for %s in %s" % (var, vhost_path))
                 
                 cmd = [
                     HTTPD, 
                     "-f", BASE_CONF,
                     "-D%s" % IDENTIFIER,
-                    "-D%s" % name,
+                    "-D%s" % var,
                     "-c", 'Include %s' % vhost_path,
                     "-c", 'Listen %d' % port,
                     "-c", 'PidFile %s' % pid_file,
                     "-c", 'ErrorLog logs/%d_error_log' % port
                 ] + sys.argv[1:]
-                #print subprocess.list2cmdline(cmd)
+                #print(subprocess.list2cmdline(cmd))
                 subprocess.call(cmd) 
                 pid_files.add(pid_file)
 
