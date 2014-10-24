@@ -86,7 +86,7 @@ def cleanup(excluding):
     """
     for pid_file in os.listdir(PID_DIR):
         pid_file = os.path.join(PID_DIR, pid_file)
-        if os.path.basename(pid_file).startswith(IDENTIFIER) and pid_file not in pid_files:
+        if os.path.basename(pid_file).startswith(IDENTIFIER) and pid_file not in excluding:
             killproc(pid_file, HTTPD)
 
 if __name__ == "__main__":
