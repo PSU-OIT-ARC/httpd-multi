@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import time
+from collections import defaultdict
 import subprocess
 import re
 import os
@@ -13,10 +14,27 @@ HTTPD = "/usr/sbin/httpd"
 BASE_CONF = "base.conf"
 # path to the vhost directory
 VHOST_DIR = "/etc/httpd/vhost.d"
+# the suffix on the files we want to parse to create an additional instances of
+# apache for
+VHOST_SUFFIX = ".vhost"
 # a name to use for pid files so we know which ones belong to us
 IDENTIFIER = "httpdmulti"
 # where to store pid files
 PID_DIR = "/var/run/httpd"
+# this is the name of the generated vhost that proxies to all the other
+# instances of apache
+PROXY_VHOST_NAME = "0proxy.conf"
+# the vhost template to use when proxying
+VHOST_PROXY_TEMPLATE = """
+<VirtualHost *:80>
+    ProxyPreserveHost on
+    ProxyPass / http://localhost:%(port)d/ retry=1
+    ProxyPassreverse / http://localhost:%(port)d/
+    %(directives)s 
+</VirtualHost>
+"""
+# Starting port number for all the apache instances
+STARTING_PORT = 8000
 
 
 def pidof(binary):
@@ -90,50 +108,56 @@ def cleanup(excluding):
             killproc(pid_file, HTTPD)
 
 if __name__ == "__main__":
-    # run the command first using the base httpd process
-    subprocess.call([HTTPD] + sys.argv[1:])
-
     # record a set of all the pid files we've created, so we know which ones *not* to
     # clean up later
     pid_files = set()
 
-    # loop through all the vhosts. If the vhost has a line that matches
-    # <IfDefine {name}.{port_number}>
-    # we assume it is a vhost that we should spawn a new apache process for
-    # on that port. Run the httpd command for that vhost, with the port and a
-    # few other options set automatically
+    # loop through all the vhosts ending in .vhost and extract the ServerName
+    # and ServerAlias lines. For each vhost file, construct a vhost that
+    # proxies to it from port 80
+    proxy_vhosts = []
+    port = STARTING_PORT
     for filename in os.listdir(VHOST_DIR):
-        # ignore non-.conf files
-        if not filename.endswith(".conf"):
+        # ignore non-.vhost files
+        if not filename.endswith(VHOST_SUFFIX):
             continue
 
+        # record all the ServerName and ServerAlias lines in the vhost
+        server_name_alias_directives = []
         vhost_path = os.path.join(VHOST_DIR, filename)
         with open(vhost_path, "r") as vhost:
             for line in vhost:
                 line = line.strip()
                 # did the line match?
-                matches = re.search(r"^\s*<IfDefine (?P<var>(?P<name>[A-Za-z0-9]+)\.(?P<port>\d+))>", line)
+                matches = re.search(r"^\s*(ServerName|ServerAlias)", line, re.IGNORECASE)
                 if not matches:
                     continue
 
-                name = matches.group("name")
-                port = int(matches.group("port"))
-                var = matches.group("var")
-                pid_file = os.path.join(PID_DIR, "%s-%s.pid" % (IDENTIFIER, var))
-                print("Executing for %s in %s" % (var, vhost_path))
-                
-                cmd = [
-                    HTTPD, 
-                    "-f", BASE_CONF,
-                    "-D%s" % IDENTIFIER,
-                    "-D%s" % var,
-                    "-c", 'Include %s' % vhost_path,
-                    "-c", 'Listen %d' % port,
-                    "-c", 'PidFile %s' % pid_file,
-                    "-c", 'ErrorLog logs/%d_error_log' % port
-                ] + sys.argv[1:]
-                #print(subprocess.list2cmdline(cmd))
-                subprocess.call(cmd) 
-                pid_files.add(pid_file)
+                server_name_alias_directives.append(line)
 
-    cleanup(pid_files)
+        pid_file = os.path.join(PID_DIR, "%s-%s.pid" % (IDENTIFIER, filename))
+        print("Executing for %s on port %d" % (filename, port))
+        cmd = [
+            HTTPD, 
+            "-f", BASE_CONF,
+            "-Dhttpdmulti",
+            "-c", 'Include %s' % vhost_path,
+            "-c", 'Listen %d' % port,
+            "-c", 'PidFile %s' % pid_file,
+        ] + sys.argv[1:]
+        #print(subprocess.list2cmdline(cmd))
+        subprocess.call(cmd) 
+        pid_files.add(pid_file)
+        proxy_vhosts.append(VHOST_PROXY_TEMPLATE % {"port": port, "directives": "\n".join(server_name_alias_directives)})
+
+        port += 1
+   
+    with open(os.path.join(VHOST_DIR, PROXY_VHOST_NAME), "w") as f:
+        f.write("# This is generated. Do not edit. See httpd-multi script\n")
+        f.write("\n".join(proxy_vhosts))
+
+    # run the command first using the base httpd process
+    print("Executing for default apache")
+    subprocess.call([HTTPD] + sys.argv[1:])
+
+    #cleanup(pid_files)
