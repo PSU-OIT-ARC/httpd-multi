@@ -107,6 +107,7 @@ def cleanup(excluding):
         if os.path.basename(pid_file).startswith(IDENTIFIER) and pid_file not in excluding:
             killproc(pid_file, HTTPD)
 
+
 if __name__ == "__main__":
     # record a set of all the pid files we've created, so we know which ones *not* to
     # clean up later
@@ -136,7 +137,6 @@ if __name__ == "__main__":
                 server_name_alias_directives.append(line)
 
         pid_file = os.path.join(PID_DIR, "%s-%s.pid" % (IDENTIFIER, filename))
-        print("Executing for %s on port %d" % (filename, port))
         cmd = [
             HTTPD, 
             "-f", BASE_CONF,
@@ -145,19 +145,21 @@ if __name__ == "__main__":
             "-c", 'Listen %d' % port,
             "-c", 'PidFile %s' % pid_file,
         ] + sys.argv[1:]
-        #print(subprocess.list2cmdline(cmd))
+        print(subprocess.list2cmdline(cmd))
         subprocess.call(cmd) 
+
         pid_files.add(pid_file)
         proxy_vhosts.append(VHOST_PROXY_TEMPLATE % {"port": port, "directives": "\n".join(server_name_alias_directives)})
-
         port += 1
    
+    # now create a vhost file that combines all the proxy vhosts we created
     with open(os.path.join(VHOST_DIR, PROXY_VHOST_NAME), "w") as f:
         f.write("# This is generated. Do not edit. See httpd-multi script\n")
         f.write("\n".join(proxy_vhosts))
 
     # run the command first using the base httpd process
-    print("Executing for default apache")
-    subprocess.call([HTTPD] + sys.argv[1:])
+    cmd = [HTTPD] + sys.argv[1:]
+    print(subprocess.list2cmdline(cmd))
+    subprocess.call(cmd)
 
     cleanup(pid_files)
