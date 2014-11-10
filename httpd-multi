@@ -55,7 +55,7 @@ def try_remove(path):
 def try_kill(pid, sig):
     """Sends the sig signal to the pid""" 
     try:
-        os.kill(pid)
+        os.kill(pid, sig)
         return True
     except OSError:
         return False
