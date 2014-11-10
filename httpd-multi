@@ -141,6 +141,8 @@ if __name__ == "__main__":
             HTTPD, 
             "-f", BASE_CONF,
             "-Dhttpdmulti",
+            "-C", 'User apache',
+            "-C", 'Group apache',
             "-c", 'Include %s' % vhost_path,
             "-c", 'Listen %d' % port,
             "-c", 'PidFile %s' % pid_file,

@@ -11,6 +11,8 @@ If the file matches, httpd-multi will issue the httpd command with these options
 
     -f base.conf # your base httpd configuration located in /etc/httpd
     -Dhttpdmulti # defines a variable you can use in conf files if needed
+    -C 'User apache'
+    -C 'Group apache'
     -c 'Include path/to/vhost.vhost' # includes the vhost file itself
     -c 'Listen {port}' # tell httpd to listen on an arbitrary port (it starts at 8000)
     -c 'PidFile /var/run/httpd/httpdmulti.name.vhost.pid' # specifies the PID file
