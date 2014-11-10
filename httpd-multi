@@ -146,11 +146,11 @@ if __name__ == "__main__":
             "-c", 'PidFile %s' % pid_file,
         ] + sys.argv[1:]
         print(subprocess.list2cmdline(cmd))
-        subprocess.call(cmd) 
-
-        pid_files.add(pid_file)
-        proxy_vhosts.append(VHOST_PROXY_TEMPLATE % {"port": port, "directives": "\n".join(server_name_alias_directives)})
-        port += 1
+        code = subprocess.call(cmd) 
+        if code == 0:
+            pid_files.add(pid_file)
+            proxy_vhosts.append(VHOST_PROXY_TEMPLATE % {"port": port, "directives": "\n".join(server_name_alias_directives)})
+            port += 1
    
     # now create a vhost file that combines all the proxy vhosts we created
     with open(os.path.join(VHOST_DIR, PROXY_VHOST_NAME), "w") as f:
