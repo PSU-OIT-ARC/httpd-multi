@@ -14,7 +14,7 @@ If the file matches, httpd-multi will issue the httpd command with these options
     -C 'User apache'
     -C 'Group apache'
     -c 'Include path/to/vhost.vhost' # includes the vhost file itself
-    -c 'Listen {port}' # tell httpd to listen on an arbitrary port (it starts at 8000)
+    -c 'Listen {port}' # tell httpd to listen on an arbitrary port
     -c 'PidFile /var/run/httpd/httpdmulti.name.vhost.pid' # specifies the PID file
 
 It then generates a normal vhost file (coping in the ServerName and ServerAlias directives) that proxies to the instance of apache it just spawned off. When the default apache instance is reloaded (the one running on port 80), it automagically proxies to that other instance of Apache running on some abitrary port.
