@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import time
-from collections import defaultdict
 import subprocess
 import re
 import os
@@ -11,8 +10,6 @@ import socket
 
 # path to the httpd executable
 HTTPD = "/usr/sbin/httpd"
-# path to the apache base configuration you want to use relative to serverroot
-BASE_CONF = "base.conf"
 # path to the vhost directory
 VHOST_DIR = "/etc/httpd/vhost.d"
 # the suffix on the files we want to parse to create an additional instances of
@@ -20,7 +17,8 @@ VHOST_DIR = "/etc/httpd/vhost.d"
 VHOST_SUFFIX = ".vhost"
 # a name to use for pid files so we know which ones belong to us
 IDENTIFIER = "httpdmulti"
-# where to store pid files
+# where to store pid files. This dir should not be writable except by root
+# since it would allow someone to SIGKILL any process otherwise
 PID_DIR = "/var/run/httpd"
 # this is the name of the generated vhost that proxies to all the other
 # instances of apache
@@ -34,14 +32,6 @@ VHOST_PROXY_TEMPLATE = """
     %(directives)s 
 </VirtualHost>
 """
-
-def get_open_port():
-    """Returns an open port number"""
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("",0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
 
 
 def pidof(binary):
@@ -115,50 +105,79 @@ def cleanup(excluding):
             killproc(pid_file, HTTPD)
 
 
-if __name__ == "__main__":
-    # record a set of all the pid files we've created, so we know which ones *not* to
-    # clean up later
-    pid_files = set()
+class VHostFile:
+    def __init__(self, path):
+        """
+        `path` should represent a valid vhost file that has a Listen directive
+        in it. This constructor will scan the vhost file for VirtualHosts and populate
+        its name_and_alias_directives attribute based on it.
 
-    # loop through all the vhosts ending in .vhost and extract the ServerName
-    # and ServerAlias lines. For each vhost file, construct a vhost that
-    # proxies to it from port 80
+        Raises a ValueError if no port number is found
+        """
+        self.path = path
+        self.port = None
+        self.name = os.path.basename(path)
+        self.name_and_alias_directives = []
+
+        # open the vhost, look for the listen directive and any ServerName, and ServerAlias directives
+        with open(self.path, "r") as vhost:
+            for line in vhost:
+                line = line.strip()
+                if line.lower().startswith("listen"):
+                    self.port = int(re.search(r"(\d+)", line).group(0))
+
+                matches = re.search(r"^\s*(ServerName|ServerAlias)", line, re.IGNORECASE)
+                if matches:
+                    self.name_and_alias_directives.append(line)
+
+            if self.port is None: 
+                raise ValueError("The vhost %s did not specify a port number! Hint: Use the Listen directive." % self.path)
+
+
+if __name__ == "__main__":
+    # this is a list of strings that will ultimately be joined together to create the proxy vhost
     proxy_vhosts = []
+    # this holds all the VhostFile instances that are created
+    vhost_files = []
+    # maps a port number to a vhost file path so we can detect port number collisions
+    ports = {}
+
+    # scan all the vhost files, and construct VhostFile instances out of them
     for filename in os.listdir(VHOST_DIR):
-        port = get_open_port()
         # ignore non-.vhost files
         if not filename.endswith(VHOST_SUFFIX):
             continue
 
-        # record all the ServerName and ServerAlias lines in the vhost
-        server_name_alias_directives = []
         vhost_path = os.path.join(VHOST_DIR, filename)
-        with open(vhost_path, "r") as vhost:
-            for line in vhost:
-                line = line.strip()
-                # did the line match?
-                matches = re.search(r"^\s*(ServerName|ServerAlias)", line, re.IGNORECASE)
-                if not matches:
-                    continue
+        vhost_file = VHostFile(path=vhost_path)
+        # make sure the port isn't already in use by another vhost
+        if vhost_file.port in ports:
+            raise ValueError("Port collision in %s. The file %s already uses port %d" % (vhost_file.path, ports[vhost_file.port], vhost_file.port))
+        # keep track of the port that was used by this vhost file
+        ports[vhost_file.port] = vhost_file.path
 
-                server_name_alias_directives.append(line)
+        vhost_files.append(vhost_file)
 
-        pid_file = os.path.join(PID_DIR, "%s-%s-%d.pid" % (IDENTIFIER, filename, port))
+    # record a set of all the pid files we've created, so we know which ones *not* to
+    # clean up later
+    pid_files = set()
+    # spawn off an apache proc for every vhost file
+    for vhost_file in vhost_files:
+        pid_file = os.path.join(PID_DIR, "%s-%s-%d.pid" % (IDENTIFIER, vhost_file.name, vhost_file.port))
         cmd = [
             HTTPD, 
-            "-f", BASE_CONF,
             "-Dhttpdmulti",
             "-C", 'User apache',
             "-C", 'Group apache',
-            "-c", 'Include %s' % vhost_path,
-            "-c", 'Listen %d' % port,
+            "-c", 'Include %s' % vhost_file.path,
             "-c", 'PidFile %s' % pid_file,
         ] + sys.argv[1:]
         print(subprocess.list2cmdline(cmd))
         code = subprocess.call(cmd) 
         if code == 0:
             pid_files.add(pid_file)
-            proxy_vhosts.append(VHOST_PROXY_TEMPLATE % {"port": port, "directives": "\n".join(server_name_alias_directives)})
+            # fill out a vhost template using the port and ServerNames/Aliases 
+            proxy_vhosts.append(VHOST_PROXY_TEMPLATE % {"port": vhost_file.port, "directives": "\n".join(vhost_file.name_and_alias_directives)})
    
     # now create a vhost file that combines all the proxy vhosts we created
     with open(os.path.join(VHOST_DIR, PROXY_VHOST_NAME), "w") as f:
@@ -169,5 +188,6 @@ if __name__ == "__main__":
     cmd = [HTTPD] + sys.argv[1:]
     print(subprocess.list2cmdline(cmd))
     subprocess.call(cmd)
-
-    cleanup(pid_files)
+    
+    print("Cleaning up...this may take a while")
+    cleanup(excluding=pid_files)
