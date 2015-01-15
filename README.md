@@ -4,20 +4,17 @@ Run multiple instances of apache on different ports, with minimal changes to you
 
 ## How it Works
 
-httpd-multi looks in your /etc/httpd/vhost.d directory for all files ending in
-`.vhost` that have ServerName or ServerAlias lines.
+httpd-multi looks in your /etc/httpd/vhost.d directory for all files ending in `.vhost`. Each of those files should contain a listen directive and one or more <VirtualHost>s
 
-If the file matches, httpd-multi will issue the httpd command with these options set on the command line:
+httpd-multi will issue the httpd command with these options set on the command line:
 
-    -f base.conf # your base httpd configuration located in /etc/httpd
     -Dhttpdmulti # defines a variable you can use in conf files if needed
     -C 'User apache'
     -C 'Group apache'
     -c 'Include path/to/vhost.vhost' # includes the vhost file itself
-    -c 'Listen {port}' # tell httpd to listen on an arbitrary port
     -c 'PidFile /var/run/httpd/httpdmulti.name.vhost.pid' # specifies the PID file
 
-It then generates a normal vhost file (coping in the ServerName and ServerAlias directives) that proxies to the instance of apache it just spawned off. When the default apache instance is reloaded (the one running on port 80), it automagically proxies to that other instance of Apache running on some abitrary port.
+It then generates a normal vhost file (coping in the ServerName and ServerAlias directives) that proxies to the instance of apache it just spawned off (0proxy.conf). When the default apache instance is reloaded (the one running on port 80), it proxies to that other instance of Apache running on some abitrary port when there is a ServerName or ServerAlias match.
 
 It passes any extra arguments along to httpd, so the usage is the same as httpd.
 
@@ -34,6 +31,7 @@ Same as httpd:
     # we can set the user and group to anything
     User svusr114
     Group resgrp114
+    Listen 9001
     <VirtualHost *:*>
         ServerName example.com
         ServerAlias *.example.com
