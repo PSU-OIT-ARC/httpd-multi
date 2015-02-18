@@ -160,6 +160,17 @@ if __name__ == "__main__":
 
         vhost_files.append(vhost_file)
 
+
+    # print an available port number if there are no arguments
+    if len(sys.argv) == 1:
+        # we start at 9000, but it doesn't really matter
+        port = 9000
+        while port in ports:
+            port += 1
+        print(port)
+        exit(0)
+
+
     # record a set of all the pid files we've created, so we know which ones *not* to
     # clean up later
     pid_files = set()

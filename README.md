@@ -16,7 +16,7 @@ httpd-multi will issue the httpd command with these options set on the command l
 
 It then generates a normal vhost file (coping in the ServerName and ServerAlias directives) that proxies to the instance of apache it just spawned off (0proxy.conf). When the default apache instance is reloaded (the one running on port 80), it proxies to that other instance of Apache running on some abitrary port when there is a ServerName or ServerAlias match.
 
-It passes any extra arguments along to httpd, so the usage is the same as httpd.
+It passes any extra arguments along to httpd, so the usage is (almost) the same as httpd.
 
 ## Usage
 
@@ -25,6 +25,10 @@ Same as httpd:
     ./httpd-multi -k start
     ./httpd-multi -k restart
     ./httpd-multi -k reload
+
+Print an available port number that you can use in a .vhost file for the `Listen` directive:
+
+    ./httpd-multi
 
 ## Example vhost file in /etc/httpd/vhost.d/example.vhost
 
