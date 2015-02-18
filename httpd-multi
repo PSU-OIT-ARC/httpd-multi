@@ -177,6 +177,7 @@ if __name__ == "__main__":
     # spawn off an apache proc for every vhost file
     for vhost_file in vhost_files:
         pid_file = os.path.join(PID_DIR, "%s-%s-%d.pid" % (IDENTIFIER, vhost_file.name, vhost_file.port))
+        pid_files.add(pid_file)
         cmd = [
             HTTPD, 
             "-Dhttpdmulti",
@@ -187,10 +188,8 @@ if __name__ == "__main__":
         ] + sys.argv[1:]
         print(subprocess.list2cmdline(cmd))
         code = subprocess.call(cmd) 
-        if code == 0:
-            pid_files.add(pid_file)
-            # fill out a vhost template using the port and ServerNames/Aliases 
-            proxy_vhosts.append(VHOST_PROXY_TEMPLATE % {"port": vhost_file.port, "directives": "\n".join(vhost_file.name_and_alias_directives)})
+        # fill out a vhost template using the port and ServerNames/Aliases
+        proxy_vhosts.append(VHOST_PROXY_TEMPLATE % {"port": vhost_file.port, "directives": "\n".join(vhost_file.name_and_alias_directives)})
    
     # now create a vhost file that combines all the proxy vhosts we created
     with open(os.path.join(VHOST_DIR, PROXY_VHOST_NAME), "w") as f:
