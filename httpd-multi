@@ -25,12 +25,14 @@ PID_DIR = "/var/run/httpd"
 PROXY_VHOST_NAME = "0proxy.conf"
 # the vhost template to use when proxying
 VHOST_PROXY_TEMPLATE = """
-<VirtualHost *:80>
-    ProxyPreserveHost on
-    ProxyPass / http://localhost:%(port)d/ retry=0
-    ProxyPassreverse / http://localhost:%(port)d/
-    %(directives)s 
-</VirtualHost>
+<IfDefine !httpdmulti>
+    <VirtualHost *:80>
+        ProxyPreserveHost on
+        ProxyPass / http://localhost:%(port)d/ retry=0
+        ProxyPassreverse / http://localhost:%(port)d/
+        %(directives)s
+    </VirtualHost>
+</IfDefine>
 """
 
 
