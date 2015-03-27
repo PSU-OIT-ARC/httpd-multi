@@ -4,7 +4,7 @@ Run multiple instances of apache on different ports, with minimal changes to you
 
 ## How it Works
 
-httpd-multi looks in your /etc/httpd/vhost.d directory for all files ending in `.vhost`. Each of those files should contain a listen directive and one or more <VirtualHost>s
+httpd-multi looks in your /etc/httpd/vhost.d directory for all files ending in `.vhost`. Each of those files should contain a listen directive and one or more &lt;VirtualHost&gt;s
 
 httpd-multi will issue the httpd command with these options set on the command line:
 
