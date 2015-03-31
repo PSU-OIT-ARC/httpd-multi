@@ -23,10 +23,14 @@ PID_DIR = "/var/run/httpd"
 # this is the name of the generated vhost that proxies to all the other
 # instances of apache
 PROXY_VHOST_NAME = "0proxy.conf"
+# the listen port for proxied vhosts
+VHOST_LISTEN_PORT = 80
+# port range for proxied vhosts
+VHOST_PROXY_PORT_START = 9000
 # the vhost template to use when proxying
 VHOST_PROXY_TEMPLATE = """
 <IfDefine !httpdmulti>
-    <VirtualHost *:80>
+    <VirtualHost *:%(listen_port)d>
         ProxyPreserveHost on
         ProxyPass / http://localhost:%(port)d/ retry=0
         ProxyPassreverse / http://localhost:%(port)d/
@@ -189,7 +193,9 @@ if __name__ == "__main__":
         print(subprocess.list2cmdline(cmd))
         code = subprocess.call(cmd) 
         # fill out a vhost template using the port and ServerNames/Aliases
-        proxy_vhosts.append(VHOST_PROXY_TEMPLATE % {"port": vhost_file.port, "directives": "\n".join(vhost_file.name_and_alias_directives)})
+        proxy_vhost_params = {"port": vhost_file.port, "listen_port": VHOST_LISTEN_PORT,
+                              "directives": "\n".join(vhost_file.name_and_alias_directives)}
+        proxy_vhosts.append(VHOST_PROXY_TEMPLATE % proxy_vhost_params)
    
     # now create a vhost file that combines all the proxy vhosts we created
     with open(os.path.join(VHOST_DIR, PROXY_VHOST_NAME), "w") as f:
