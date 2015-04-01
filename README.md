@@ -36,7 +36,7 @@ Print an available port number that you can use in a .vhost file for the `Listen
     User svusr114
     Group resgrp114
     Listen 9001
-    <VirtualHost *:*>
+    <VirtualHost *>
         ServerName example.com
         ServerAlias *.example.com
         ErrorLog /var/log/httpd/example.error_log
