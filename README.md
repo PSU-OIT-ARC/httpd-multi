@@ -28,7 +28,7 @@ Same as httpd:
 
 Print an available port number that you can use in a .vhost file for the `Listen` directive:
 
-    ./httpd-multi
+    ./httpd-multi -p
 
 ## Example vhost file in /etc/httpd/vhost.d/example.vhost
 
