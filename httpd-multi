@@ -211,7 +211,8 @@ if __name__ == "__main__":
             # keep track of the port that was used by this vhost file
             ports[vhost_file.port] = vhost_file.path
             vhost_files.append(vhost_file)
-        except:
+        except Exception as e:
+            print(e)
             print("Error encountered while processing '%s'. Skipping." % (vhost_path))
 
     if len(sys.argv) == 1:
