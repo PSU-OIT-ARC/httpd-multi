@@ -42,6 +42,7 @@ VHOST_PROXY_TEMPLATE_HTTPS = """
         ProxyPreserveHost on
         ProxyPass / http://localhost:%(port)d/ retry=0
         ProxyPassreverse / http://localhost:%(port)d/
+        RequestHeader set X-Forwarded-Proto "https"
 
         %(directives)s
     </VirtualHost>
