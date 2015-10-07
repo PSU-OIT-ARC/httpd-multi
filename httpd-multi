@@ -232,7 +232,7 @@ if __name__ == "__main__":
     pid_files = set()
     # spawn off an apache proc for every vhost file
     for vhost_file in vhost_files:
-        pid_file = os.path.join(PID_DIR, "%s-%s-%d.pid" % (IDENTIFIER, vhost_file.name, vhost_file.port))
+        pid_file = os.path.join(PID_DIR, "%s-%s.pid" % (IDENTIFIER, vhost_file.name))
         pid_files.add(pid_file)
         cmd = [
             HTTPD, 
