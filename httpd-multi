@@ -38,6 +38,9 @@ VHOST_PROXY_TEMPLATE_HTTPS = """
 
     <VirtualHost *:443>
         SSLEngine on
+        SSLCertificateFile /etc/pki/tls/certs/stage.rc.pdx.edu.crt
+        SSLCertificateKeyFile /etc/pki/tls/private/stage.rc.pdx.edu.key
+        SSLProtocol -ALL +TLSv1 +TLSv1.1 +TLSv1.2
 
         ProxyPreserveHost on
         ProxyPass / http://localhost:%(port)d/ retry=0
@@ -177,7 +180,7 @@ class VHostFile:
         """Return a <VirtualHost> as a string that can be used to proxy to this vhost"""
         proxy_vhost_params = {
             "port": self.port,
-            "directives": "\n".join(self.name_and_alias_directives)
+            "directives": "\n        ".join(self.name_and_alias_directives)
         }
         template = VHOST_PROXY_TEMPLATE_HTTPS if self.ssl else VHOST_PROXY_TEMPLATE_HTTP
         return template % proxy_vhost_params
