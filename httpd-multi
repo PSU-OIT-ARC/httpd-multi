@@ -240,8 +240,6 @@ if __name__ == "__main__":
         cmd = [
             HTTPD, 
             "-Dhttpdmulti",
-            "-C", 'User apache',
-            "-C", 'Group apache',
             "-c", 'Include %s' % vhost_file.path,
             "-c", 'PidFile %s' % pid_file,
         ] + sys.argv[1:]
