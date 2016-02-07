@@ -23,7 +23,7 @@ IDENTIFIER = "httpdmulti"
 PID_DIR = "/var/run/httpd"
 # this is the name of the generated vhost that proxies to all the other
 # instances of apache
-PROXY_VHOST_NAME = "0proxy.conf"
+PROXY_VHOST_NAME = "main-conf.d/httpd-multi-proxies.conf"
 # port range for proxied vhosts
 VHOST_PROXY_PORT_START = 9000
 # the vhost template to use when proxying
