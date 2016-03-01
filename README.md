@@ -1,61 +1,67 @@
-# httpd-multi
+# httpdmulti
 
-Run multiple instances of apache on different ports, with minimal changes to your normal apache configuration.
+Run multiple instances of Apache on different ports with minimal changes
+to your normal Apache configuration.
 
-## How it Works
+## How it works
 
-httpd-multi looks in your /etc/httpd/vhost.d directory for all files ending in `.vhost`. Each of those files should contain a listen directive and one or more &lt;VirtualHost&gt;s
+httpdmulti looks in your `/etc/httpd/vhost.d` directory for all files
+ending in `.vhost`. Each of those files should contain a `Listen`
+directive and one or more `<VirtualHost>` sections.
 
-httpd-multi will issue the httpd command with these options set on the command line:
+httpdmulti will run the httpd command with these options set on the
+command line:
 
-    -Dhttpdmulti # defines a variable you can use in conf files if needed
-    -C 'User apache'
-    -C 'Group apache'
-    -c 'Include path/to/vhost.vhost' # includes the vhost file itself
-    -c 'PidFile /var/run/httpd/httpdmulti.name.vhost.pid' # specifies the PID file
+    -Dhttpdmulti
+    -c 'Include /etc/httpd/vhost.d/{name}.vhost'
+    -c 'PidFile /var/run/httpd/httpdmulti-{name}.pid'
 
-It then generates a proxying vhost (coping in the ServerName and ServerAlias directives) that proxies to the instance of apache it just spawned off (the generated vhosts are put in 0proxy.conf). When the default apache instance is reloaded (the one running on port 80 and 443), it proxies to that other instance of Apache running on some abitrary port when there is a ServerName or ServerAlias match.
+It then generates a proxying vhost (copying in the ServerName and
+ServerAlias directives) that proxies to the instance of Apache it just
+spawned off). When the default Apache instance is reloaded (the one
+running on port 80 and 443), it proxies to that other instance of Apache
+running on some abitrary port when there is a ServerName or ServerAlias
+match.
 
-By default, the generated vhost is configured to redirect HTTP traffic to HTTPS, and the HTTPS vhost does the actual proxying. If you do not want to use SSL for that vhost, put `#nossl` on a line in the .vhost file.
-
-It passes any extra arguments along to httpd, so the usage is (almost) the same as httpd.
+By default, the generated vhost is configured to redirect HTTP traffic
+to HTTPS, and the HTTPS vhost does the actual proxying. If you do not
+want to use SSL for that vhost, put `#nossl` on a line in the .vhost
+file.
 
 ## Usage
 
-Same as httpd:
+Similar to httpd (operates on all httpdmulti instances):
 
-    ./httpd-multi -k start
-    ./httpd-multi -k restart
-    ./httpd-multi -k reload
+    ./httpdmulti start
+    ./httpdmulti restart
+    ./httpdmulti graceful
 
-Print an available port number that you can use in a .vhost file for the `Listen` directive:
+You can also specify a single site:
 
-    ./httpd-multi -p
+    ./httpdmulti graceful -s quickticket
 
-## Example vhost file in /etc/httpd/vhost.d/example.vhost
+Print an available port number that you can use in a .vhost file for the
+`Listen` directive:
 
-    # we can set the user and group to anything
-    User svusr114
-    Group resgrp114
-    Listen 9001
+    ./httpdmulti find-port
+
+## Example vhost file
+
+    Note: This is a real example taken from merope.
+
+    # These lines are the most relevant to httpdmulti.
+    Listen 9020
+    User svusr368
+    Group resgrp368
+
+    # The VirtualHost section is just a normal vhost setup.
     <VirtualHost *>
-        ServerName example.com
-        ServerAlias *.example.com
-        ErrorLog /var/log/httpd/example.error_log
-        CustomLog /var/log/httpd/example.access_log vhost
-        # django
-        WSGIDaemonProcess example processes=2 threads=2 umask=0002 home=/tmp display-name=%{GROUP}
-        WSGIProcessGroup  example
-        WSGIScriptAlias / /path/to/wsgi.py
-
-        Alias /media/logos /path/to/media/logos
-        Alias /static /path/to/static
-
-        XSendFile on
-        XSendFilePath /path/to/media
-
-        <Directory /path/to/static>
-            AllowOverride All
-        </Directory>
-
+        ServerName oregoninvasiveshotline.stage.rc.pdx.edu
+        WSGIDaemonProcess oregoninvasiveshotline-stage processes=2 threads=25 umask=0002 display-name=%{GROUP} home=/vol/www/oregoninvasiveshotline
+        WSGIProcessGroup oregoninvasiveshotline-stage
+        WSGIScriptAlias / /vol/www/oregoninvasiveshotline/stage/wsgi/wsgi.py
+        Alias /media /vol/www/oregoninvasiveshotline/media/stage
+        Alias /static /vol/www/oregoninvasiveshotline/static/stage
+        Alias /favicon.ico /vol/www/oregoninvasiveshotline/static/stage/favicon.ico
+        Alias /robots.txt /vol/www/oregoninvasiveshotline/static/stage/robots.txt
     </VirtualHost>
