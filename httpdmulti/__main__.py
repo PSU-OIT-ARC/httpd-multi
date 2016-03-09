@@ -21,17 +21,34 @@ def find_open_port(start_port=settings.VHOST_PROXY_PORT_START):
 def call_httpd(action, site=None, httpd=settings.HTTPD, identifier=settings.IDENTIFIER,
                pid_dir=settings.PID_DIR, proxy_vhost_name=settings.PROXY_VHOST_NAME,
                vhost_dir=settings.VHOST_DIR):
+    """This calls httpd with the specified action.
 
+        httpd -k {action}
+
+    It operates either on all sites or just one site.
+
+    When operating on all sites, the sites are located by looking in the
+    ``vhost_dir`` for files with a .vhost extension. After the httpd
+    action is run for each site, any sites that were already running but
+    not found in ``vhost_dir`` are cleaned up (i.e., killed off).
+
+    When operating on one site, specified via the ``site`` arg, the site
+    is located by looking for ``{site}.vhost`` in ``vhost_dir``. No site
+    cleanup is done in this case.
+
+    """
     vhosts = get_vhosts(site=site)
     proxy_vhosts = []
-    pid_files = set()
+
+    # PID files that won't be cleaned up.
+    exclude_pid_files = set()
 
     # Run httpd action on either all sites or just ``site``.
     for vhost in vhosts:
         print('==', vhost.name)
         pid_file_name = '{identifier}-{name}.pid'.format(identifier=identifier, name=vhost.name)
         pid_file_path = os.path.join(pid_dir, pid_file_name)
-        pid_files.add(pid_file_path)
+        exclude_pid_files.add(pid_file_path)
         cmd = [
             httpd,
             '-D', 'httpdmulti',
@@ -58,8 +75,9 @@ def call_httpd(action, site=None, httpd=settings.HTTPD, identifier=settings.IDEN
     print(subprocess.list2cmdline(cmd))
     subprocess.call(cmd)
 
-    print('Cleaning up...')
-    cleanup(exclude=pid_files)
+    if site is None:
+        print('Cleaning up...')
+        cleanup(exclude=exclude_pid_files)
 
 
 def main(argv=None):
