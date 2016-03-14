@@ -34,18 +34,18 @@ file.
 
 Similar to httpd (operates on all httpdmulti instances):
 
-    ./httpdmulti start
-    ./httpdmulti restart
-    ./httpdmulti graceful
+    httpdmulti start
+    httpdmulti restart
+    httpdmulti graceful
 
 You can also specify a single site:
 
-    ./httpdmulti graceful -s quickticket
+    httpdmulti graceful -s quickticket
 
 Print an available port number that you can use in a .vhost file for the
 `Listen` directive:
 
-    ./httpdmulti find-port
+    httpdmulti find-port
 
 ## Example vhost file
 
