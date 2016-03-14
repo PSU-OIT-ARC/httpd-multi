@@ -101,7 +101,13 @@ def main(argv=None):
         action_subparser.add_argument('-s', '--site', default=None)
 
     args = parser.parse_args(argv)
-    return args.func(args)
+
+    try:
+        func = args.func
+    except AttributeError:
+        parser.print_usage()
+    else:
+        return func(args)
 
 
 if __name__ == '__main__':
