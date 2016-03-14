@@ -3,6 +3,17 @@
 Run multiple instances of Apache on different ports with minimal changes
 to your normal Apache configuration.
 
+## Installation
+
+### Development
+
+    make init
+
+### Production
+
+    make init
+    sudo make install
+
 ## How it works
 
 httpdmulti looks in your `/etc/httpd/vhost.d` directory for all files
