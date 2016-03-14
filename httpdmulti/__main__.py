@@ -54,6 +54,8 @@ def call_httpd(action, site=None, httpd=settings.HTTPD, identifier=settings.IDEN
             '-D', 'httpdmulti',
             '-c', 'Include {path}'.format(path=vhost.path),
             '-c', 'PidFile {path}'.format(path=pid_file_path),
+            '-c', 'CustomLog /var/log/httpd/{0.name}.access_log combined'.format(vhost),
+            '-c', 'ErrorLog /var/log/httpd/{0.name}.error_log'.format(vhost),
             '-k', action,
         ]
         print(subprocess.list2cmdline(cmd))
