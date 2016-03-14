@@ -15,6 +15,8 @@ command line:
     -Dhttpdmulti
     -c 'Include /etc/httpd/vhost.d/{name}.vhost'
     -c 'PidFile /var/run/httpd/httpdmulti-{name}.pid'
+    -c 'CustomLog /var/log/httpd/{name}.access_log combined'
+    -c 'ErrorLog /var/log/httpd/{name}.error_log'
 
 It then generates a proxying vhost (copying in the ServerName and
 ServerAlias directives) that proxies to the instance of Apache it just
