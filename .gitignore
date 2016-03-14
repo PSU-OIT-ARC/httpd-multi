@@ -1,0 +1,10 @@
+# Root
+/.env/
+/*.egg-info/
+/build/
+/dist/
+
+# Anywhere
+__pycache__
+*.pyc
+*.pyo
