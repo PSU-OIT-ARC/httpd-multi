@@ -28,7 +28,7 @@ PID_DIR = '/var/run/httpd'
 # <VirtualHost>s that proxy to the individual Apache instances started
 # by httpdmulti. This file needs to be included from the main Apache
 # config file.
-PROXY_VHOST_NAME = os.path.join(MAIN_DIR, 'httpd-multi-proxies.conf')
+PROXY_VHOST_NAME = os.path.join(MAIN_DIR, 'httpdmulti-proxies.conf')
 
 # Start port for vhosts.
 VHOST_PROXY_PORT_START = 9000
