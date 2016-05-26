@@ -20,7 +20,7 @@ def find_open_port(start_port=settings.VHOST_PROXY_PORT_START):
 # TODO: Move to a better location
 def call_httpd(action, site=None, httpd=settings.HTTPD, identifier=settings.IDENTIFIER,
                pid_dir=settings.PID_DIR, proxy_vhost_name=settings.PROXY_VHOST_NAME,
-               vhost_dir=settings.HTTPDMULTI_DIR):
+               directory=settings.HTTPDMULTI_DIR, suffix=settings.VHOST_SUFFIX):
     """This calls httpd with the specified action.
 
         httpd -k {action}
@@ -37,7 +37,7 @@ def call_httpd(action, site=None, httpd=settings.HTTPD, identifier=settings.IDEN
     cleanup is done in this case.
 
     """
-    vhosts = get_vhosts(site=site)
+    vhosts = get_vhosts(site=site, directory=directory, suffix=suffix)
     proxy_vhosts = []
 
     # PID files that won't be cleaned up.
