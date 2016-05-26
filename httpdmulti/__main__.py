@@ -20,7 +20,7 @@ def find_open_port(start_port=settings.VHOST_PROXY_PORT_START):
 # TODO: Move to a better location
 def call_httpd(action, site=None, httpd=settings.HTTPD, identifier=settings.IDENTIFIER,
                pid_dir=settings.PID_DIR, proxy_vhost_name=settings.PROXY_VHOST_NAME,
-               vhost_dir=settings.VHOST_DIR):
+               vhost_dir=settings.HTTPDMULTI_DIR):
     """This calls httpd with the specified action.
 
         httpd -k {action}
@@ -65,7 +65,7 @@ def call_httpd(action, site=None, httpd=settings.HTTPD, identifier=settings.IDEN
     # XXX: Maybe don't *always* do this.
     for vhost in get_vhosts():
         proxy_vhosts.append(str(vhost))
-    with open(os.path.join(vhost_dir, proxy_vhost_name), 'w') as fp:
+    with open(proxy_vhost_name, 'w') as fp:
         fp.write('# This is generated. Do not edit. See httpdmulti script.\n')
         fp.write('\n'.join(proxy_vhosts))
         fp.write('\n')

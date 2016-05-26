@@ -16,15 +16,15 @@ to your normal Apache configuration.
 
 ## How it works
 
-httpdmulti looks in your `/etc/httpd/vhost.d` directory for all files
-ending in `.vhost`. Each of those files should contain a `Listen`
-directive and one or more `<VirtualHost>` sections.
+httpdmulti looks in your `/etc/httpd/vhost.d/httpdmulti.d` directory for
+all files ending in `.vhost`. Each of those files should contain
+a `Listen` directive and one or more `<VirtualHost>` sections.
 
 httpdmulti will run the httpd command with these options set on the
 command line:
 
     -Dhttpdmulti
-    -c 'Include /etc/httpd/vhost.d/{name}.vhost'
+    -c 'Include /etc/httpd/vhost.d/httpdmulti.d/{name}.vhost'
     -c 'PidFile /var/run/httpd/httpdmulti-{name}.pid'
     -c 'CustomLog /var/log/httpd/{name}.access_log combined'
     -c 'ErrorLog /var/log/httpd/{name}.error_log'

@@ -90,7 +90,7 @@ def try_remove(path):
         return False
 
 
-def get_vhosts(site=None, directory=settings.VHOST_DIR, suffix=settings.VHOST_SUFFIX):
+def get_vhosts(site=None, directory=settings.HTTPDMULTI_DIR, suffix=settings.VHOST_SUFFIX):
     vhosts = []
     port_vhost_map = {}
 
